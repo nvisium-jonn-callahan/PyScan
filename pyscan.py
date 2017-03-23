@@ -194,6 +194,7 @@ class Seeker(threading.Thread):
         self.resqueue = resqueue
         self.failqueue = failqueue
         self.searchrules = copy.deepcopy(searchrules) #not entirely sure if this is required, but just in case...
+	self.progs = []
         self.progresstracker = progresstracker
         self.lock = lock
         self.done = False
@@ -204,6 +205,9 @@ class Seeker(threading.Thread):
             self.resultdict[rule] = []
 
     def run(self):
+	for rule in self.searchrules:
+	    self.progs.append(re.compile(rule, flags=re.IGNORECASE))
+	
         while not self.done and not self.filequeue.empty():
             try:
                 self.searchfile(self.filequeue.get(timeout=0.1))
@@ -216,10 +220,9 @@ class Seeker(threading.Thread):
 
         try:
             with open(file) as f:
-                for rule in self.searchrules:
+                for prog in self.progs:
                     self.linenum = 1
                     f.seek(0)
-                    prog = re.compile(rule, flags=re.IGNORECASE)
                     for l in f:
                         if prog.search(l):
                             #formatting done for csv rfc purposes
